@@ -17,6 +17,7 @@ import org.springframework.test.context.jdbc.Sql;
 
 import com.checkinx.AbstractIntegrationTest;
 import com.checkinx.demo2.models.Pet;
+import com.checkinx.utils.sql.interceptors.SqlInterceptor;
 import com.zaxxer.hikari.pool.HikariProxyResultSet;
 import net.ttddyy.dsproxy.ExecutionInfo;
 import net.ttddyy.dsproxy.QueryInfo;
@@ -35,6 +36,9 @@ public class PetsRepositoryIT extends AbstractIntegrationTest {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private SqlInterceptor sqlInterceptor;
 
     @Sql("pets.sql")
     @Test
@@ -108,5 +112,18 @@ public class PetsRepositoryIT extends AbstractIntegrationTest {
 
         // ASSERT
         assertEquals(1, pets.size());
+    }
+
+    @Sql("pets.sql")
+    @Test
+    public void testFindByNameWithCheckInxAssert() {
+        // ARRANGE
+        sqlInterceptor.startInterception();
+
+        // ACT
+        final List<Pet> pets = repository.findByName("Jack");
+
+        // ASSERT
+        assertEquals(1, sqlInterceptor.getStatements().size());
     }
 }
