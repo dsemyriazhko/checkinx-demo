@@ -1,4 +1,4 @@
-package com.checkinx.utils.sql.interceptors
+package com.checkinx.demo2.utils.sql.interceptors
 
 interface SqlInterceptor {
 
