@@ -9,18 +9,13 @@ import net.ttddyy.dsproxy.support.ProxyDataSource
 import org.postgresql.jdbc.PgResultSet
 import javax.sql.DataSource
 
-open class PostgresInterceptor(private val dataSource: DataSource) : SqlInterceptor {
+open class PostgresInterceptor(private val dataSource: ProxyDataSource) : SqlInterceptor {
     private var statementsList: MutableList<String> = mutableListOf()
 
     override val statements: List<String>
         get() = statementsList.toList()
 
     override fun startInterception() {
-        if (dataSource !is ProxyDataSource) {
-            throw IllegalDataSource("""DataSource actual type is ${dataSource::class}
-                |expected ${ProxyDataSource::class}""".trimMargin())
-        }
-
         dataSource.addListener(object : QueryExecutionListener {
             override fun beforeQuery(execInfo: ExecutionInfo, queryInfoList: List<QueryInfo>) {
                 // nothing
@@ -38,4 +33,17 @@ open class PostgresInterceptor(private val dataSource: DataSource) : SqlIntercep
             }
         })
     }
+
+    override fun stopInterception() {
+        dataSource.proxyConfig.queryListener.listeners.
+    }
+
+//    private fun isDataSourceHasAppropriateType() {
+//        if (dataSource !is ProxyDataSource) {
+//            throw IllegalDataSource(
+//                """DataSource actual type is ${dataSource::class}
+//                    |expected ${ProxyDataSource::class}""".trimMargin()
+//            )
+//        }
+//    }
 }

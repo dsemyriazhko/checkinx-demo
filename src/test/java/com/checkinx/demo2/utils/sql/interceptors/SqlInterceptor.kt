@@ -5,5 +5,6 @@ interface SqlInterceptor {
     val statements: List<String>
 
     fun startInterception()
+    fun stopInterception()
 
 }
