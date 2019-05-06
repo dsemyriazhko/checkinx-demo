@@ -9,6 +9,7 @@ import java.util.Map;
 
 import javax.sql.DataSource;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -44,7 +45,7 @@ public class PetsRepositoryIT extends AbstractIntegrationTest {
 
     @Before
     public void setUp() {
-        sqlInterceptor = new PostgresInterceptor(dataSource);
+        sqlInterceptor = new PostgresInterceptor((ProxyDataSource) dataSource);
         sqlInterceptor.startInterception();
     }
 
@@ -120,6 +121,7 @@ public class PetsRepositoryIT extends AbstractIntegrationTest {
         final List<Pet> pets = repository.findByName("Jack");
 
         // ASSERT
+        sqlInterceptor.stopInterception();
         assertEquals(1, sqlInterceptor.getStatements().size());
 
         final List<Map<String, Object>> query = jdbcTemplate.queryForList("explain " + sqlInterceptor.getStatements().get(0));
