@@ -2,6 +2,7 @@ package com.checkinx.demo2.dao;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.sql.SQLException;
 import java.util.List;
@@ -9,7 +10,6 @@ import java.util.Map;
 
 import javax.sql.DataSource;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -21,7 +21,8 @@ import org.springframework.test.context.jdbc.Sql;
 import com.checkinx.AbstractIntegrationTest;
 import com.checkinx.demo2.models.Pet;
 import com.checkinx.demo2.utils.sql.interceptors.SqlInterceptor;
-import com.checkinx.demo2.utils.sql.interceptors.impl.PostgresInterceptor;
+import com.checkinx.demo2.utils.sql.interceptors.postgres.PostgresInterceptor;
+import com.checkinx.demo2.utils.sql.plan.query.ExecutionPlanQuery;
 import com.zaxxer.hikari.pool.HikariProxyResultSet;
 import net.ttddyy.dsproxy.ExecutionInfo;
 import net.ttddyy.dsproxy.QueryInfo;
@@ -40,6 +41,9 @@ public class PetsRepositoryIT extends AbstractIntegrationTest {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private ExecutionPlanQuery executionPlanQuery;
 
     private SqlInterceptor sqlInterceptor;
 
@@ -114,7 +118,7 @@ public class PetsRepositoryIT extends AbstractIntegrationTest {
 
     @Sql("pets.sql")
     @Test
-    public void testFindByNameWithCheckInxAssert() {
+    public void testFindByNameWithCheckInxAssertWhenNoIndex() {
         // ARRANGE
 
         // ACT
@@ -124,7 +128,40 @@ public class PetsRepositoryIT extends AbstractIntegrationTest {
         sqlInterceptor.stopInterception();
         assertEquals(1, sqlInterceptor.getStatements().size());
 
-        final List<Map<String, Object>> query = jdbcTemplate.queryForList("explain " + sqlInterceptor.getStatements().get(0));
-        assertNotNull(query);
+        final List<String> executionPlan = executionPlanQuery.execute(sqlInterceptor.getStatements().get(0));
+        assertTrue(executionPlan.size() > 0);
+
+//        final ExecutionPlan plan = executionPlanParser.parse(executionPlan);
+
+//        CheckInxAssert.assertIndex(CoverLevel.ZERO, plan);
+
+//        final List<Map<String, Object>> query = jdbcTemplate.queryForList("explain " + sqlInterceptor.getStatements().get(0));
+//        assertNotNull(query);
+    }
+
+    @Sql("pets.sql")
+    @Test
+    public void testFindByNameWithCheckInxAssertWhenIndexFull() {
+        // ARRANGE
+
+        // ACT
+        final List<Pet> pets = repository.findByLocation("Moscow");
+
+        // ASSERT
+        sqlInterceptor.stopInterception();
+        assertEquals(1, sqlInterceptor.getStatements().size());
+
+        final List<String> executionPlan = executionPlanQuery.execute(sqlInterceptor.getStatements().get(0));
+        assertTrue(executionPlan.size() > 0);
+
+//        final ExecutionPlan plan = executionPlanParser.parse(executionPlan);
+
+//        CheckInxAssert.assertIndex(CoverLevel.FULL, "index name", plan);
+
+//        CheckInxAssert.assertIndex(CoverLevel.HALF, "index name", plan);
+//        CheckInxAssert.assertIndex(CoverLevel.NOT_INDEX, plan);
+
+//        final List<Map<String, Object>> query = jdbcTemplate.queryForList("explain " + sqlInterceptor.getStatements().get(0));
+//        assertNotNull(query);
     }
 }

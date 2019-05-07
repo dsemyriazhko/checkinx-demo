@@ -1,4 +1,4 @@
-package com.checkinx.demo2.utils.sql.interceptors.impl
+package com.checkinx.demo2.utils.sql.interceptors.postgres
 
 import com.checkinx.demo2.utils.sql.interceptors.SqlInterceptor
 import net.ttddyy.dsproxy.support.ProxyDataSource

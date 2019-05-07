@@ -1,4 +1,4 @@
-package com.checkinx.demo2.utils.sql.interceptors.impl
+package com.checkinx.demo2.utils.sql.interceptors.postgres
 
 import com.zaxxer.hikari.pool.HikariProxyResultSet
 import net.ttddyy.dsproxy.ExecutionInfo
