@@ -1,9 +1,19 @@
+buildscript {
+    ext.kotlin_version = '1.3.31'
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+    }
+}
 plugins {
 	id 'org.springframework.boot' version '2.1.4.RELEASE'
 	id 'java'
 }
 
 apply plugin: 'io.spring.dependency-management'
+apply plugin: 'kotlin'
 
 group = 'com.checkinx'
 version = '0.0.1-SNAPSHOT'
@@ -24,4 +34,15 @@ dependencies {
 	testCompile group: 'net.ttddyy', name: 'datasource-proxy', version: '1.5.1'
 	testCompile group: 'net.ttddyy', name: 'datasource-assert', version: '1.0'
 	testCompile group: 'org.codehaus.mojo', name: 'animal-sniffer-annotations', version: '1.17'
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+}
+compileKotlin {
+    kotlinOptions {
+        jvmTarget = "1.8"
+    }
+}
+compileTestKotlin {
+    kotlinOptions {
+        jvmTarget = "1.8"
+    }
 }
