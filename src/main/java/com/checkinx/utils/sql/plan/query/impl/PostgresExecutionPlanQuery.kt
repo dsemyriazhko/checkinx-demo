@@ -1,7 +1,7 @@
-package com.checkinx.demo2.utils.sql.plan.query.impl
+package com.checkinx.utils.sql.plan.query.impl
 
-import com.checkinx.demo2.utils.sql.plan.query.ExecutionPlanException
-import com.checkinx.demo2.utils.sql.plan.query.ExecutionPlanQuery
+import com.checkinx.utils.sql.plan.query.ExecutionPlanException
+import com.checkinx.utils.sql.plan.query.ExecutionPlanQuery
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.stereotype.Component
 

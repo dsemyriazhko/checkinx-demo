@@ -20,9 +20,14 @@ import org.springframework.test.context.jdbc.Sql;
 
 import com.checkinx.AbstractIntegrationTest;
 import com.checkinx.demo2.models.Pet;
-import com.checkinx.demo2.utils.sql.interceptors.SqlInterceptor;
-import com.checkinx.demo2.utils.sql.interceptors.postgres.PostgresInterceptor;
-import com.checkinx.demo2.utils.sql.plan.query.ExecutionPlanQuery;
+import com.checkinx.utils.CheckInxAssert;
+import com.checkinx.utils.CoverLevel;
+import com.checkinx.utils.sql.interceptors.SqlInterceptor;
+import com.checkinx.utils.sql.interceptors.postgres.PostgresInterceptor;
+import com.checkinx.utils.sql.plan.parse.ExecutionPlanParser;
+import com.checkinx.utils.sql.plan.parse.models.ExecutionPlan;
+import com.checkinx.utils.sql.plan.parse.models.PlanNode;
+import com.checkinx.utils.sql.plan.query.ExecutionPlanQuery;
 import com.zaxxer.hikari.pool.HikariProxyResultSet;
 import net.ttddyy.dsproxy.ExecutionInfo;
 import net.ttddyy.dsproxy.QueryInfo;
@@ -47,6 +52,9 @@ public class PetsRepositoryIT extends AbstractIntegrationTest {
 
     private SqlInterceptor sqlInterceptor;
 
+    @Autowired
+    private ExecutionPlanParser executionPlanParser;
+
     @Before
     public void setUp() {
         sqlInterceptor = new PostgresInterceptor((ProxyDataSource) dataSource);
@@ -55,7 +63,7 @@ public class PetsRepositoryIT extends AbstractIntegrationTest {
 
     @Sql("pets.sql")
     @Test
-    public void testFindByNameWithProxyTestDataSource() {
+    public void testFindByNameWithProxyTestDataSourceWithJpa() {
         // ARRANGE
         final ProxyTestDataSource ds = new ProxyTestDataSource(dataSource);
         ((ProxyDataSource)dataSource).addListener(ds.getQueryExecutionFactoryListener());
@@ -72,7 +80,21 @@ public class PetsRepositoryIT extends AbstractIntegrationTest {
     @Ignore
     @Sql("pets.sql")
     @Test
-    public void testFindByNameWithProxyDataSource() {
+    public void testFindByNameWhenProxyTestDataSourceWithJdbc() {
+        // ARRANGE
+        final ProxyTestDataSource ds = new ProxyTestDataSource(dataSource);
+
+        // ACT
+        final List<Map<String, Object>> list = jdbcTemplate.queryForList("select * from pets");
+
+        // ASSERT
+        final String query = ds.getFirstPrepared().getQuery();
+    }
+
+    @Ignore
+    @Sql("pets.sql")
+    @Test
+    public void testFindByNameWhenProxyDataSourceHandles() {
         // ARRANGE
         ((ProxyDataSource)dataSource).addListener(new QueryExecutionListener() {
             @Override
@@ -102,23 +124,9 @@ public class PetsRepositoryIT extends AbstractIntegrationTest {
         assertEquals(1, pets.size());
     }
 
-    @Ignore
     @Sql("pets.sql")
     @Test
-    public void testFindByNameWithProxyTestDataSourceWhenJdbc() {
-        // ARRANGE
-        final ProxyTestDataSource ds = new ProxyTestDataSource(dataSource);
-
-        // ACT
-        final List<Map<String, Object>> list = jdbcTemplate.queryForList("select * from pets");
-
-        // ASSERT
-        final String query = ds.getFirstPrepared().getQuery();
-    }
-
-    @Sql("pets.sql")
-    @Test
-    public void testFindByNameWithCheckInxAssertWhenNoIndex() {
+    public void testFindByNameWhenNoIndex() {
         // ARRANGE
 
         // ACT
@@ -131,7 +139,9 @@ public class PetsRepositoryIT extends AbstractIntegrationTest {
         final List<String> executionPlan = executionPlanQuery.execute(sqlInterceptor.getStatements().get(0));
         assertTrue(executionPlan.size() > 0);
 
-//        final ExecutionPlan plan = executionPlanParser.parse(executionPlan);
+        final ExecutionPlan plan = executionPlanParser.parse(executionPlan);
+        assertEquals("pets pet0_ ", plan.getTable());
+        assertEquals("Seq Scan", plan.getRootPlanNode().getCoverage());
 
 //        CheckInxAssert.assertIndex(CoverLevel.ZERO, plan);
 
@@ -141,11 +151,40 @@ public class PetsRepositoryIT extends AbstractIntegrationTest {
 
     @Sql("pets.sql")
     @Test
-    public void testFindByNameWithCheckInxAssertWhenIndexFull() {
+    public void testFindByNameWhenTextIndexedField() {
         // ARRANGE
 
         // ACT
         final List<Pet> pets = repository.findByLocation("Moscow");
+
+        // ASSERT
+        sqlInterceptor.stopInterception();
+        assertEquals(1, sqlInterceptor.getStatements().size());
+
+        final List<String> executionPlan = executionPlanQuery.execute(sqlInterceptor.getStatements().get(0));
+        assertTrue(executionPlan.size() > 0);
+
+        final ExecutionPlan plan = executionPlanParser.parse(executionPlan);
+        assertNotNull(plan);
+
+        final PlanNode childNode = plan.getRootPlanNode().getChildren().get(0);
+        assertEquals("ix_pets_location", childNode.getTarget());
+        assertEquals("Bitmap Index Scan", childNode.getCoverage());
+
+        CheckInxAssert.assertIndex(CoverLevel.HALF, "index name", plan);
+//        CheckInxAssert.assertIndex(CoverLevel.NOT_INDEX, plan);
+
+//        final List<Map<String, Object>> query = jdbcTemplate.queryForList("explain " + sqlInterceptor.getStatements().get(0));
+//        assertNotNull(query);
+    }
+
+    @Sql("pets.sql")
+    @Test
+    public void testFindByNameWithCheckInxAssertWhenIntIndexedField() {
+        // ARRANGE
+
+        // ACT
+        final List<Pet> pets = repository.findByAge(1);
 
         // ASSERT
         sqlInterceptor.stopInterception();

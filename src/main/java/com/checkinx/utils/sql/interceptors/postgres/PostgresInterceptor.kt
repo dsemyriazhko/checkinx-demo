@@ -1,6 +1,6 @@
-package com.checkinx.demo2.utils.sql.interceptors.postgres
+package com.checkinx.utils.sql.interceptors.postgres
 
-import com.checkinx.demo2.utils.sql.interceptors.SqlInterceptor
+import com.checkinx.utils.sql.interceptors.SqlInterceptor
 import net.ttddyy.dsproxy.support.ProxyDataSource
 
 open class PostgresInterceptor(private val dataSource: ProxyDataSource) : SqlInterceptor {
