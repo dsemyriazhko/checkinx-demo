@@ -15,4 +15,6 @@ public interface PetsRepository extends JpaRepository<Pet, UUID> {
     List<Pet> findByName(@Param("name") String name);
 
     List<Pet> findByLocation(@Param("location") String location);
+
+    List<Pet> findByAge(@Param("age") Integer age);
 }
