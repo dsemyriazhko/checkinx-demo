@@ -21,7 +21,7 @@ import org.springframework.test.context.jdbc.Sql;
 import com.checkinx.AbstractIntegrationTest;
 import com.checkinx.demo2.models.Pet;
 import com.checkinx.utils.CheckInxAssert;
-import com.checkinx.utils.CoverLevel;
+import com.checkinx.utils.CoverageLevel;
 import com.checkinx.utils.sql.interceptors.SqlInterceptor;
 import com.checkinx.utils.sql.interceptors.postgres.PostgresInterceptor;
 import com.checkinx.utils.sql.plan.parse.ExecutionPlanParser;
@@ -91,6 +91,72 @@ public class PetsRepositoryIT extends AbstractIntegrationTest {
         final String query = ds.getFirstPrepared().getQuery();
     }
 
+    @Sql("pets.sql")
+    @Test
+    public void testFindByNameWhenNoIndex() {
+        // ARRANGE
+
+        // ACT
+        final List<Pet> pets = repository.findByName("Jack");
+
+        // ASSERT
+        sqlInterceptor.stopInterception();
+        assertEquals(1, sqlInterceptor.getStatements().size());
+
+        final List<String> executionPlan = executionPlanQuery.execute(sqlInterceptor.getStatements().get(0));
+        assertTrue(executionPlan.size() > 0);
+
+        final ExecutionPlan plan = executionPlanParser.parse(executionPlan);
+        assertEquals("pets pet0_", plan.getTable());
+        assertEquals("Seq Scan", plan.getRootPlanNode().getCoverage());
+
+        CheckInxAssert.assertIndex(CoverageLevel.ZERO, "pets pet0_", plan);
+    }
+
+    @Sql("pets.sql")
+    @Test
+    public void testFindByNameWhenTextIndexedField() {
+        // ARRANGE
+
+        // ACT
+        final List<Pet> pets = repository.findByLocation("Moscow");
+
+        // ASSERT
+        sqlInterceptor.stopInterception();
+        assertEquals(1, sqlInterceptor.getStatements().size());
+
+        final List<String> executionPlan = executionPlanQuery.execute(sqlInterceptor.getStatements().get(0));
+        assertTrue(executionPlan.size() > 0);
+
+        final ExecutionPlan plan = executionPlanParser.parse(executionPlan);
+        assertNotNull(plan);
+
+        final PlanNode childNode = plan.getRootPlanNode().getChildren().get(0);
+        assertEquals("ix_pets_location", childNode.getTarget());
+        assertEquals("Bitmap Index Scan", childNode.getCoverage());
+
+        CheckInxAssert.assertIndex(CoverageLevel.HALF, "ix_pets_location", plan);
+    }
+
+    @Sql("pets.sql")
+    @Test
+    public void testFindByNameWithCheckInxAssertWhenIntIndexedField() {
+        // ARRANGE
+
+        // ACT
+        final List<Pet> pets = repository.findByAge(1);
+
+        // ASSERT
+        sqlInterceptor.stopInterception();
+        assertEquals(1, sqlInterceptor.getStatements().size());
+
+        final List<String> executionPlan = executionPlanQuery.execute(sqlInterceptor.getStatements().get(0));
+        assertTrue(executionPlan.size() > 0);
+
+        final ExecutionPlan plan = executionPlanParser.parse(executionPlan);
+        CheckInxAssert.assertIndex(CoverageLevel.HALF, "ix_pets_age", plan);
+    }
+
     @Ignore
     @Sql("pets.sql")
     @Test
@@ -122,85 +188,5 @@ public class PetsRepositoryIT extends AbstractIntegrationTest {
 
         // ASSERT
         assertEquals(1, pets.size());
-    }
-
-    @Sql("pets.sql")
-    @Test
-    public void testFindByNameWhenNoIndex() {
-        // ARRANGE
-
-        // ACT
-        final List<Pet> pets = repository.findByName("Jack");
-
-        // ASSERT
-        sqlInterceptor.stopInterception();
-        assertEquals(1, sqlInterceptor.getStatements().size());
-
-        final List<String> executionPlan = executionPlanQuery.execute(sqlInterceptor.getStatements().get(0));
-        assertTrue(executionPlan.size() > 0);
-
-        final ExecutionPlan plan = executionPlanParser.parse(executionPlan);
-        assertEquals("pets pet0_ ", plan.getTable());
-        assertEquals("Seq Scan", plan.getRootPlanNode().getCoverage());
-
-//        CheckInxAssert.assertIndex(CoverLevel.ZERO, plan);
-
-//        final List<Map<String, Object>> query = jdbcTemplate.queryForList("explain " + sqlInterceptor.getStatements().get(0));
-//        assertNotNull(query);
-    }
-
-    @Sql("pets.sql")
-    @Test
-    public void testFindByNameWhenTextIndexedField() {
-        // ARRANGE
-
-        // ACT
-        final List<Pet> pets = repository.findByLocation("Moscow");
-
-        // ASSERT
-        sqlInterceptor.stopInterception();
-        assertEquals(1, sqlInterceptor.getStatements().size());
-
-        final List<String> executionPlan = executionPlanQuery.execute(sqlInterceptor.getStatements().get(0));
-        assertTrue(executionPlan.size() > 0);
-
-        final ExecutionPlan plan = executionPlanParser.parse(executionPlan);
-        assertNotNull(plan);
-
-        final PlanNode childNode = plan.getRootPlanNode().getChildren().get(0);
-        assertEquals("ix_pets_location", childNode.getTarget());
-        assertEquals("Bitmap Index Scan", childNode.getCoverage());
-
-        CheckInxAssert.assertIndex(CoverLevel.HALF, "index name", plan);
-//        CheckInxAssert.assertIndex(CoverLevel.NOT_INDEX, plan);
-
-//        final List<Map<String, Object>> query = jdbcTemplate.queryForList("explain " + sqlInterceptor.getStatements().get(0));
-//        assertNotNull(query);
-    }
-
-    @Sql("pets.sql")
-    @Test
-    public void testFindByNameWithCheckInxAssertWhenIntIndexedField() {
-        // ARRANGE
-
-        // ACT
-        final List<Pet> pets = repository.findByAge(1);
-
-        // ASSERT
-        sqlInterceptor.stopInterception();
-        assertEquals(1, sqlInterceptor.getStatements().size());
-
-        final List<String> executionPlan = executionPlanQuery.execute(sqlInterceptor.getStatements().get(0));
-        assertTrue(executionPlan.size() > 0);
-
-//        final ExecutionPlan plan = executionPlanParser.parse(executionPlan);
-
-//        CheckInxAssert.assertIndex(CoverLevel.FULL, "index name", plan);
-
-//        CheckInxAssert.assertIndex(CoverLevel.HALF, "index name", plan);
-//        CheckInxAssert.assertIndex(CoverLevel.NOT_INDEX, plan);
-
-//        final List<Map<String, Object>> query = jdbcTemplate.queryForList("explain " + sqlInterceptor.getStatements().get(0));
-//        assertNotNull(query);
     }
 }
