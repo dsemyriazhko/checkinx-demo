@@ -5,13 +5,22 @@ data class ExecutionPlan(
     val table: String?,
     val rootPlanNode: PlanNode
 ) {
-//    fun findTargetInPlanTree(target: String, node: PlanNode): PlanNode {
-//        if (node.target == target) {
-//            return node
-//        }
+    fun findTargetInPlanTree(target: String): PlanNode? {
+        return findTargetInPlanTree(target, rootPlanNode)
+    }
 
-//        node.children.forEach {
-//            findTargetInPlanTree()
-//        }
-//    }
+    private fun findTargetInPlanTree(target: String, rootNode: PlanNode): PlanNode? {
+        if (rootNode.target == target) {
+            return rootNode
+        }
+
+        rootNode.children.forEach {
+            val result = findTargetInPlanTree(target, it)
+            if (result != null) {
+                return result
+            }
+        }
+
+        return null
+    }
 }

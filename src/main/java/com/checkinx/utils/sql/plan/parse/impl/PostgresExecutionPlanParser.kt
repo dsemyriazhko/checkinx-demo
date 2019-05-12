@@ -31,7 +31,7 @@ class PostgresExecutionPlanParser : ExecutionPlanParser {
             val propertyRegex = """^\s*(?<key>.+):\s+(?<value>.+)${'$'}""".toRegex()
             when {
                 """^\s{$childMargin}->\s+.*${'$'}""".toRegex().matches(item) -> {
-                    val match = """\s+->\s+(?<coverage>.+) on (?<target>.*)\s+\(.*${'$'}""".toRegex().find(item)
+                    val match = """\s+->\s+(?<coverage>.+) on (?<target>.*)\s{2,}\(.*${'$'}""".toRegex().find(item)
                     val node = PlanNode(
                         item,
                         match?.groups?.get("target")?.value,
@@ -64,7 +64,7 @@ class PostgresExecutionPlanParser : ExecutionPlanParser {
         executionPlan: List<String>
     ): PlanNode {
         val rawLine = executionPlan.first()
-        val match = """^(?<coverage>.+) on (?<target>.*)\s+\(.*${'$'}""".toRegex().find(rawLine)
+        val match = """^(?<coverage>.+) on (?<target>.*)\s{2,}\(.*${'$'}""".toRegex().find(rawLine)
 
         return PlanNode(
             rawLine,
