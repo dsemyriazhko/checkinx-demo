@@ -146,9 +146,9 @@ class PetsRepositoryIT : AbstractIntegrationTest() {
         val plan = executionPlanParser.parse(executionPlan)
         assertNotNull(plan)
 
-        val (_, target, coverage) = plan.rootPlanNode.children[0]
+        val (_, target, coverage) = plan.rootPlanNode
         assertEquals("ix_pets_location", target)
-        assertEquals("Bitmap Index Scan", coverage)
+        assertEquals("Index Scan", coverage)
 
         // Now assert coverage is simple like never before ...
         checkInxAssertService.assertCoverage(CoverageLevel.HALF, "ix_pets_location", plan)
