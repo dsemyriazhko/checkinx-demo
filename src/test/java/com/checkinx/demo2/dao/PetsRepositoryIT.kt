@@ -40,13 +40,8 @@ class PetsRepositoryIT : AbstractIntegrationTest() {
     private lateinit var executionPlanParser: ExecutionPlanParser
     @Autowired
     private lateinit var checkInxAssertService: CheckInxAssertService
-
+    @Autowired
     private lateinit var sqlInterceptor: SqlInterceptor
-
-    @Before
-    fun setUp() {
-        sqlInterceptor = PostgresInterceptor(dataSource as ProxyDataSource)
-    }
 
     @Sql("pets.sql")
     @Test

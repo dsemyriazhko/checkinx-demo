@@ -6,7 +6,6 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ComponentScan;
 
 @ComponentScan({
-	"com.checkinx.utils",
 	"com.checkinx.demo2"
 })
 @SpringBootApplication
