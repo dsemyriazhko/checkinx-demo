@@ -3,24 +3,23 @@ package com.checkinx;
 import java.time.Duration;
 
 import org.flywaydb.core.Flyway;
-import org.junit.After;
-import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.ComponentScan;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.test.context.testng.AbstractTestNGSpringContextTests;
 import org.testcontainers.containers.PostgreSQLContainer;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.Test;
 
 import com.checkinx.demo2.Application;
 
+@Test
 @ContextConfiguration(initializers = {CheckInxContextInitializer.class})
-@RunWith(SpringJUnit4ClassRunner.class)
 @SpringBootTest(classes = Application.class)
 @ActiveProfiles("test")
-public abstract class AbstractIntegrationTest {
+public abstract class AbstractIntegrationTest extends AbstractTestNGSpringContextTests {
     static final PostgreSQLContainer postgreSQLContainer =
         (PostgreSQLContainer) new PostgreSQLContainer("postgres:10.6")
             .withDatabaseName("postgres")
@@ -40,7 +39,7 @@ public abstract class AbstractIntegrationTest {
     @Autowired
     private Flyway flyway;
 
-    @After
+    @AfterClass
     public void cleanTestDatabase() {
         jdbcTemplate.execute("DROP SCHEMA public CASCADE; "
             + "CREATE SCHEMA public;"
