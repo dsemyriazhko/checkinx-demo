@@ -5,24 +5,19 @@ import com.checkinx.demo2.models.Pet
 import com.checkinx.utils.asserts.CheckInxAssertService
 import com.checkinx.utils.asserts.CoverageLevel
 import com.checkinx.utils.sql.interceptors.SqlInterceptor
-import com.checkinx.utils.sql.interceptors.postgres.PostgresInterceptor
 import com.checkinx.utils.sql.plan.parse.ExecutionPlanParser
 import com.checkinx.utils.sql.plan.query.ExecutionPlanQuery
-import com.zaxxer.hikari.pool.HikariProxyResultSet
-import net.ttddyy.dsproxy.ExecutionInfo
-import net.ttddyy.dsproxy.QueryInfo
 import net.ttddyy.dsproxy.asserts.ProxyTestDataSource
-import net.ttddyy.dsproxy.listener.QueryExecutionListener
 import net.ttddyy.dsproxy.support.ProxyDataSource
-import org.junit.Assert.*
-import org.junit.Before
-import org.junit.Ignore
-import org.junit.Test
-import org.postgresql.jdbc.PgResultSet
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.test.context.jdbc.Sql
-import java.sql.SQLException
+import org.testng.AssertJUnit.assertEquals
+import org.testng.AssertJUnit.assertNotNull
+import org.testng.AssertJUnit.assertTrue
+import org.testng.annotations.BeforeClass
+import org.testng.annotations.Ignore
+import org.testng.annotations.Test
 import java.util.*
 import javax.sql.DataSource
 
@@ -42,6 +37,20 @@ class PetsRepositoryIT : AbstractIntegrationTest() {
     private lateinit var checkInxAssertService: CheckInxAssertService
     @Autowired
     private lateinit var sqlInterceptor: SqlInterceptor
+
+    @BeforeClass
+    fun setUp() {
+        // generate test data by code
+        IntRange(1, 10000).forEach {
+            val pet = Pet()
+            pet.id = UUID.randomUUID()
+            pet.age = it
+            pet.location = "Saint Petersburg"
+            pet.name = "Jack-$it"
+
+            repository.save(pet)
+        }
+    }
 
     @Sql("pets.sql")
     @Test
@@ -93,7 +102,7 @@ class PetsRepositoryIT : AbstractIntegrationTest() {
         assertTrue(executionPlan.isNotEmpty())
 
         val plan = executionPlanParser.parse(executionPlan)
-        assertEquals("pets pet0_", plan.table)
+        assertEquals("pets pet0_", plan.rootPlanNode.target)
         assertEquals("Seq Scan", plan.rootPlanNode.coverage)
 
         checkInxAssertService.assertCoverage(CoverageLevel.ZERO, "pets pet0_", plan)
@@ -105,17 +114,6 @@ class PetsRepositoryIT : AbstractIntegrationTest() {
     fun testFindByNameGivenLocationWhenIndexUsingThenCoverageIsHalf() {
         // ARRANGE
         val location = "Moscow"
-
-        // ... or generate test data by code
-        IntRange(1, 10000).forEach {
-            val pet = Pet()
-            pet.id = UUID.randomUUID()
-            pet.age = it
-            pet.location = "Saint Petersburg"
-            pet.name = "Jack-$it"
-
-            repository.save(pet)
-        }
 
         // ACT
 
@@ -141,9 +139,10 @@ class PetsRepositoryIT : AbstractIntegrationTest() {
         val plan = executionPlanParser.parse(executionPlan)
         assertNotNull(plan)
 
-        val (_, target, coverage) = plan.rootPlanNode
-        assertEquals("ix_pets_location", target)
-        assertEquals("Index Scan", coverage)
+        val rootNode = plan.rootPlanNode
+        assertEquals("Index Scan", rootNode.coverage)
+        assertEquals("ix_pets_location", rootNode.target)
+        assertEquals("pets pet0_", rootNode.table)
 
         // Now assert coverage is simple like never before ...
         checkInxAssertService.assertCoverage(CoverageLevel.HALF, "ix_pets_location", plan)
@@ -182,16 +181,6 @@ class PetsRepositoryIT : AbstractIntegrationTest() {
     @Test
     fun testFindByNameGivenAgeWhenIndexedFieldThenAllCoverageHalf() {
         // ARRANGE
-        IntRange(1, 10000).forEach {
-            val pet = Pet()
-            pet.id = UUID.randomUUID()
-            pet.age = it
-            pet.location = "Moscow"
-            pet.name = "Jack-$it"
-
-            repository.save(pet)
-        }
-
         val age = 1
 
         // ACT
@@ -203,37 +192,5 @@ class PetsRepositoryIT : AbstractIntegrationTest() {
 
         // ASSERT
         checkInxAssertService.assertCoverage(CoverageLevel.HALF, sqlInterceptor.statements[0])
-    }
-
-    @Ignore
-    @Sql("pets.sql")
-    @Test
-    fun testFindByNameWhenProxyDataSourceHandles() {
-        // ARRANGE
-        (dataSource as ProxyDataSource).addListener(object : QueryExecutionListener {
-            override fun beforeQuery(execInfo: ExecutionInfo, queryInfoList: List<QueryInfo>) {
-                // nothing
-            }
-
-            override fun afterQuery(execInfo: ExecutionInfo, queryInfoList: List<QueryInfo>) {
-                try {
-                    //                    System.out.println(((HikariProxyResultSet)execInfo.getResult()).getStatement());
-
-                    val sql =
-                        (execInfo.result as HikariProxyResultSet).unwrap(PgResultSet::class.java).statement.toString()
-                    //                    final List<Map<String, Object>> result = jdbcTemplate.queryForList("explain " + sql);
-                    println(sql)
-                } catch (e: SQLException) {
-                    e.printStackTrace()
-                }
-
-            }
-        })
-
-        // ACT
-        val pets = repository.findByName("Jack")
-
-        // ASSERT
-        assertEquals(1, pets.size.toLong())
     }
 }
