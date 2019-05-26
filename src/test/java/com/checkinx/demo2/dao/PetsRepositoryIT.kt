@@ -111,7 +111,7 @@ class PetsRepositoryIT : AbstractIntegrationTest() {
     // If you want to get truthful execution plan, generate enough test data
     @Sql("pets.sql") // do it by db dump ...
     @Test
-    fun testFindByNameGivenLocationWhenIndexUsingThenCoverageIsHalf() {
+    fun findByLocation() {
         // ARRANGE
         val location = "Moscow"
 
