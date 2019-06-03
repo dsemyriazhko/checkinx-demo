@@ -1,7 +1,6 @@
 package com.checkinx.demo2.dao
 
-import com.checkinx.AbstractIntegrationTest
-import com.checkinx.demo2.models.Pet
+import com.checkinx.AbstractDbTest
 import com.checkinx.utils.asserts.CheckInxAssertService
 import com.checkinx.utils.asserts.CoverageLevel
 import com.checkinx.utils.sql.interceptors.SqlInterceptor
@@ -15,13 +14,11 @@ import org.springframework.test.context.jdbc.Sql
 import org.testng.AssertJUnit.assertEquals
 import org.testng.AssertJUnit.assertNotNull
 import org.testng.AssertJUnit.assertTrue
-import org.testng.annotations.BeforeClass
 import org.testng.annotations.Ignore
 import org.testng.annotations.Test
-import java.util.*
 import javax.sql.DataSource
 
-class PetsRepositoryIT : AbstractIntegrationTest() {
+class PetsRepositoryDbIT : AbstractDbTest() {
 
     @Autowired
     private lateinit var repository: PetsRepository
@@ -38,20 +35,6 @@ class PetsRepositoryIT : AbstractIntegrationTest() {
     @Autowired
     private lateinit var sqlInterceptor: SqlInterceptor
 
-    @BeforeClass
-    fun setUp() {
-        // generate test data by code
-        IntRange(1, 20000).forEach {
-            val pet = Pet()
-            pet.id = UUID.randomUUID()
-            pet.age = it
-            pet.location = if (it % 2 == 0) "Moscow" else "Saint Petersburg"
-            pet.name = "Jack-$it"
-
-            repository.save(pet)
-        }
-    }
-
     @Sql("pets.sql")
     @Test
     fun testFindByNameWithProxyTestDataSourceWithJpa() {
@@ -59,8 +42,10 @@ class PetsRepositoryIT : AbstractIntegrationTest() {
         val ds = ProxyTestDataSource(dataSource)
         (dataSource as ProxyDataSource).addListener(ds.queryExecutionFactoryListener)
 
+        val name = "Jack-1"
+
         // ACT
-        val pets = repository.findByName("Jack")
+        val pets = repository.findByName(name)
 
         // ASSERT
         assertEquals(1, pets.size.toLong())
