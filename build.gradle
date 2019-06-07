@@ -27,7 +27,7 @@ repositories {
 }
 
 dependencies {
-    implementation 'com.github.dsemyriazhko:checkinx-utils:0.2.0'
+    implementation 'com.github.tinkoffcreditsystems:checkinx-utils:0.2.0'
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.flywaydb:flyway-core'
 	implementation 'org.postgresql:postgresql'
