@@ -2,7 +2,7 @@ spring:
   application:
     name: checkinx-demo
   datasource:
-    url: jdbc:postgresql://localhost:5432/postgres
+    url: jdbc:postgresql://localhost:5437/postgres
     username: postgres
     password: postgres
     hikari:
