@@ -11,10 +11,7 @@ import net.ttddyy.dsproxy.asserts.ProxyTestDataSource
 import net.ttddyy.dsproxy.support.ProxyDataSource
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.jdbc.core.JdbcTemplate
-import org.springframework.test.context.jdbc.Sql
-import org.testng.AssertJUnit.assertEquals
-import org.testng.AssertJUnit.assertNotNull
-import org.testng.AssertJUnit.assertTrue
+import org.testng.AssertJUnit.*
 import org.testng.annotations.BeforeClass
 import org.testng.annotations.Ignore
 import org.testng.annotations.Test
@@ -41,7 +38,7 @@ class PetsRepositoryIT : AbstractIntegrationTest() {
     @BeforeClass
     fun setUp() {
         // generate test data by code
-        IntRange(1, 10000).forEach {
+        IntRange(1, 1000).forEach {
             val pet = Pet()
             pet.id = UUID.randomUUID()
             pet.age = it
@@ -52,7 +49,6 @@ class PetsRepositoryIT : AbstractIntegrationTest() {
         }
     }
 
-    @Sql("pets.sql")
     @Test
     fun testFindByNameWithProxyTestDataSourceWithJpa() {
         // ARRANGE
@@ -60,7 +56,7 @@ class PetsRepositoryIT : AbstractIntegrationTest() {
         (dataSource as ProxyDataSource).addListener(ds.queryExecutionFactoryListener)
 
         // ACT
-        val pets = repository.findByName("Jack")
+        val pets = repository.findByName("Jack-100")
 
         // ASSERT
         assertEquals(1, pets.size.toLong())
@@ -69,7 +65,6 @@ class PetsRepositoryIT : AbstractIntegrationTest() {
     }
 
     @Ignore
-    @Sql("pets.sql")
     @Test
     fun testFindByNameWhenProxyTestDataSourceWithJdbc() {
         // ARRANGE
@@ -82,11 +77,10 @@ class PetsRepositoryIT : AbstractIntegrationTest() {
         val query = ds.firstPrepared.query
     }
 
-    @Sql("pets.sql")
     @Test
     fun testFindByNameWhenNoIndex() {
         // ARRANGE
-        val name = "Jack"
+        val name = "Jack-200"
 
         // ACT
         sqlInterceptor.startInterception()
@@ -109,7 +103,6 @@ class PetsRepositoryIT : AbstractIntegrationTest() {
     }
 
     // If you want to get truthful execution plan, generate enough test data
-    @Sql("pets.sql") // do it by db dump ...
     @Test
     fun findByLocation() {
         // ARRANGE
@@ -140,9 +133,8 @@ class PetsRepositoryIT : AbstractIntegrationTest() {
         assertNotNull(plan)
 
         val rootNode = plan.rootPlanNode
-        assertEquals("Index Scan", rootNode.coverage)
-        assertEquals("ix_pets_location", rootNode.target)
-        assertEquals("pets pet0_", rootNode.table)
+        assertEquals("Bitmap Heap Scan", rootNode.coverage)
+        assertEquals("pets pet0_", rootNode.target)
 
         // Now assert coverage is simple like never before ...
         checkInxAssertService.assertCoverage(CoverageLevel.HALF, "ix_pets_location", plan)
@@ -154,7 +146,6 @@ class PetsRepositoryIT : AbstractIntegrationTest() {
         checkInxAssertService.assertCoverage(CoverageLevel.HALF, sqlInterceptor.statements[0])
     }
 
-    @Sql("pets.sql")
     @Test
     fun testFindByNameWithCheckInxAssertWhenIntIndexedField() {
         // ARRANGE
@@ -177,7 +168,6 @@ class PetsRepositoryIT : AbstractIntegrationTest() {
         checkInxAssertService.assertCoverage(CoverageLevel.HALF, "ix_pets_age", plan)
     }
 
-    @Sql("pets.sql")
     @Test
     fun testFindByNameGivenAgeWhenIndexedFieldThenAllCoverageHalf() {
         // ARRANGE

@@ -54,3 +54,11 @@ compileTestKotlin {
         jvmTarget = "1.8"
     }
 }
+
+test {
+    group 'verification'
+    useTestNG {
+        include '**/*Test.class'
+        include '**/*IT.class'
+    }
+}
